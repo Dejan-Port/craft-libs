@@ -278,6 +278,7 @@ impl<B: Backend> UpdateBanner<B> {
     }
 
     fn strip(&mut self, ui: &mut egui::Ui, notice: &Notice, strings: &Strings) {
+        outline_widgets(ui);
         ui.add_space(4.0);
         ui.horizontal_wrapped(|ui| {
             match notice {
@@ -343,6 +344,7 @@ impl<B: Backend> UpdateBanner<B> {
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .open(&mut open)
             .show(ctx, |ui| {
+                outline_widgets(ui);
                 let Some(form) = &mut self.sign_in else { return };
                 egui::Grid::new("craft_update_sign_in_grid").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
                     let label = ui.label(&strings.username);
@@ -386,6 +388,20 @@ impl<B: Backend> UpdateBanner<B> {
             self.backend.request_login(&form.username, &form.password);
             // The password isn't kept once sent.
             form.password.clear();
+        }
+    }
+}
+
+/// Gives buttons and text fields an outline when the app's theme draws them without one (a
+/// flat, Office-style theme), so the sign-in fields can be seen and an enabled Update now is
+/// told apart from a disabled one. Themes that already outline widgets are left as they are.
+fn outline_widgets(ui: &mut egui::Ui) {
+    let visuals = ui.visuals_mut();
+    visuals.button_frame = true;
+    let color = visuals.widgets.noninteractive.fg_stroke.color.gamma_multiply(0.45);
+    for state in [&mut visuals.widgets.inactive, &mut visuals.widgets.hovered, &mut visuals.widgets.active] {
+        if state.bg_stroke.width <= 0.0 || state.bg_stroke.color.a() == 0 {
+            state.bg_stroke = egui::Stroke::new(1.0, color);
         }
     }
 }
